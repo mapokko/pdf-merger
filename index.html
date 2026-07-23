@@ -613,6 +613,8 @@
     let sourceFiles = [];
     let pages = [];
     let dragSrcIndex = null;
+    let renderGeneration = 0;
+    let gridRenderScheduled = false;
 
     dropZone.addEventListener('click', () => fileInput.click());
 
@@ -679,9 +681,23 @@
       renderAll();
     }
 
+    function scheduleGridRender() {
+      if (gridRenderScheduled) return;
+      gridRenderScheduled = true;
+      requestAnimationFrame(() => {
+        gridRenderScheduled = false;
+        renderPageGrid();
+      });
+    }
+
     async function renderThumbnails(pdfDoc, sourceIdx, pageCount) {
+      const gen = renderGeneration;
       for (let p = 1; p <= pageCount; p++) {
+        if (gen !== renderGeneration) return;
+
         const page = await pdfDoc.getPage(p);
+        if (gen !== renderGeneration) return;
+
         const unscaled = page.getViewport({ scale: 1 });
         const scale = THUMB_WIDTH / unscaled.width;
         const viewport = page.getViewport({ scale });
@@ -692,12 +708,14 @@
         const ctx = canvas.getContext('2d');
         await page.render({ canvasContext: ctx, viewport }).promise;
 
+        if (gen !== renderGeneration) return;
+
         const pageEntry = pages.find(pg => pg.sourceIdx === sourceIdx && pg.pageNum === p - 1 && !pg.thumbCanvas);
         if (pageEntry) {
           pageEntry.thumbCanvas = canvas;
         }
 
-        renderPageGrid();
+        scheduleGridRender();
       }
     }
 
@@ -733,6 +751,10 @@
         `;
 
         pill.querySelector('.source-pill-remove').addEventListener('click', () => {
+          renderGeneration++;
+          pages.filter(p => p.sourceIdx === idx).forEach(p => {
+            if (p.thumbCanvas) { p.thumbCanvas.width = 0; p.thumbCanvas.height = 0; }
+          });
           pages = pages.filter(p => p.sourceIdx !== idx);
           clearStatus();
           renderAll();
@@ -859,6 +881,13 @@
     }
 
     clearBtn.addEventListener('click', () => {
+      renderGeneration++;
+      pages.forEach(p => {
+        if (p.thumbCanvas) {
+          p.thumbCanvas.width = 0;
+          p.thumbCanvas.height = 0;
+        }
+      });
       sourceFiles = [];
       pages = [];
       clearStatus();
