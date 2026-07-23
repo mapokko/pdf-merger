@@ -326,6 +326,164 @@
       padding: 0 5px;
     }
 
+    .page-zoom {
+      position: absolute;
+      bottom: 36px;
+      left: 4px;
+      right: 4px;
+      background: var(--thumb-overlay);
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.3rem 0;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.15s, background 0.15s;
+    }
+
+    .page-card:hover .page-zoom { opacity: 1; }
+    .page-zoom:hover { background: var(--accent); }
+
+    /* Filename */
+    .filename-row {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-top: 1rem;
+    }
+
+    .filename-input {
+      flex: 1;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .filename-input:focus { border-color: var(--accent); }
+
+    .filename-ext {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    /* Preview modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+    }
+
+    .modal-overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      width: 32px;
+      height: 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      transition: background 0.15s;
+    }
+
+    .modal-close:hover { background: var(--danger); color: #fff; }
+
+    .modal-canvas-wrap {
+      background: #fff;
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 200px;
+      min-height: 280px;
+    }
+
+    .modal-canvas-wrap canvas {
+      max-width: 90vw;
+      max-height: 80vh;
+      display: block;
+    }
+
+    .modal-loading {
+      color: var(--text-muted);
+      padding: 3rem;
+      font-size: 0.9rem;
+    }
+
+    .modal-info {
+      margin-top: 0.75rem;
+      color: #ccc;
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    .modal-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 36px;
+      height: 36px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: var(--text);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .modal-nav:hover { background: var(--surface-hover); }
+    .modal-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+    .modal-nav.prev { left: -50px; }
+    .modal-nav.next { right: -50px; }
+
+    @media (max-width: 600px) {
+      .modal-nav.prev { left: 8px; }
+      .modal-nav.next { right: 8px; }
+    }
+
     /* Actions */
     .actions {
       margin-top: 1.5rem;
@@ -451,6 +609,11 @@
     </div>
     <div class="page-grid" id="page-grid"></div>
 
+    <div class="filename-row" id="filename-row" style="display:none">
+      <input type="text" class="filename-input" id="filename-input" value="merged">
+      <span class="filename-ext">.pdf</span>
+    </div>
+
     <div class="actions" id="actions" style="display:none">
       <button class="btn btn-secondary" id="clear-btn"></button>
       <button class="btn btn-primary" id="merge-btn" disabled></button>
@@ -465,6 +628,16 @@
     <div class="footer">
       <div class="footer-author">by Fabio M</div>
       <div id="footer-text"></div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="preview-modal">
+    <div class="modal-content">
+      <button class="modal-close" id="modal-close">&times;</button>
+      <button class="modal-nav prev" id="modal-prev">&#8249;</button>
+      <button class="modal-nav next" id="modal-next">&#8250;</button>
+      <div class="modal-canvas-wrap" id="modal-canvas-wrap"></div>
+      <div class="modal-info" id="modal-info"></div>
     </div>
   </div>
 
@@ -518,6 +691,10 @@
         mergeSuccess: (pages, size) => `Merged ${pages} ${pages !== 1 ? 'pages' : 'page'} (${size}).`,
         pagesFromFiles: (p, f) => `${p} ${p !== 1 ? 'pages' : 'page'} from ${f} ${f !== 1 ? 'files' : 'file'}`,
         dragToReorder: 'Drag to reorder',
+        filenamePlaceholder: 'Output filename',
+        zoomPreview: 'Preview',
+        previewLoading: 'Rendering...',
+        previewInfo: (pageNum, fileName) => `Page ${pageNum} — ${fileName}`,
         footerHtml: 'This is an open-source project. The source code is available for review <a href="https://github.com/mapokko/pdf-merger" target="_blank" rel="noopener">here</a>.'
           + '<div class="footer-legal">'
           + 'This software is provided as-is, with no service level agreement and no guarantee of functionality. '
@@ -553,6 +730,10 @@
         mergeSuccess: (pages, size) => `${pages !== 1 ? 'Unite' : 'Unita'} ${pages} ${pages !== 1 ? 'pagine' : 'pagina'} (${size}).`,
         pagesFromFiles: (p, f) => `${p} ${p !== 1 ? 'pagine' : 'pagina'} da ${f} file`,
         dragToReorder: 'Trascina per riordinare',
+        filenamePlaceholder: 'Nome file di output',
+        zoomPreview: 'Anteprima',
+        previewLoading: 'Rendering...',
+        previewInfo: (pageNum, fileName) => `Pagina ${pageNum} — ${fileName}`,
         footerHtml: 'Questo è un progetto open source. Il codice sorgente è disponibile per la consultazione <a href="https://github.com/mapokko/pdf-merger" target="_blank" rel="noopener">qui</a>.'
           + '<div class="footer-legal">'
           + 'Questo software è fornito così com\'è, senza alcun accordo sul livello di servizio né garanzia di funzionamento. '
@@ -588,6 +769,7 @@
       document.getElementById('drop-limits').textContent = t('limits');
       document.getElementById('clear-btn').textContent = t('clearAll');
       document.getElementById('merge-btn').textContent = t('mergePdfs');
+      document.getElementById('filename-input').placeholder = t('filenamePlaceholder');
       document.getElementById('footer-text').innerHTML = t('footerHtml');
       document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === lang);
@@ -723,6 +905,7 @@
       const hasPages = pages.length > 0;
       dropZone.classList.toggle('compact', hasPages);
       actionsEl.style.display = hasPages ? 'flex' : 'none';
+      document.getElementById('filename-row').style.display = hasPages ? 'flex' : 'none';
       document.getElementById('page-grid-header').style.display = hasPages ? 'flex' : 'none';
       mergeBtn.disabled = pages.length < 1;
 
@@ -819,9 +1002,19 @@
         labelDiv.innerHTML = `<span class="page-label-num">${t('pageNum', entry.pageNum + 1)}</span>
           <span class="page-label-file" title="${escapeHtml(sf.file.name)}">${escapeHtml(sf.file.name)}</span>`;
 
+        const zoomBtn = document.createElement('button');
+        zoomBtn.className = 'page-zoom';
+        zoomBtn.title = t('zoomPreview');
+        zoomBtn.textContent = t('zoomPreview');
+        zoomBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          openPreview(i);
+        });
+
         card.appendChild(thumbDiv);
         card.appendChild(indexBadge);
         card.appendChild(removeBtn);
+        card.appendChild(zoomBtn);
         card.appendChild(labelDiv);
 
         card.addEventListener('dragstart', onDragStart);
@@ -936,7 +1129,8 @@
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'merged.pdf';
+        const filename = document.getElementById('filename-input').value.trim() || 'merged';
+        a.download = filename + '.pdf';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -976,6 +1170,106 @@
       div.textContent = str;
       return div.innerHTML;
     }
+
+    const PREVIEW_WIDTH = 1000;
+    const previewModal = document.getElementById('preview-modal');
+    const modalCanvasWrap = document.getElementById('modal-canvas-wrap');
+    const modalInfo = document.getElementById('modal-info');
+    const modalPrev = document.getElementById('modal-prev');
+    const modalNext = document.getElementById('modal-next');
+    let previewIndex = -1;
+    let previewCanvas = null;
+
+    async function openPreview(idx) {
+      previewIndex = idx;
+      previewModal.classList.add('open');
+      updateNavButtons();
+      await renderPreview(idx);
+    }
+
+    function closePreview() {
+      previewModal.classList.remove('open');
+      previewIndex = -1;
+      if (previewCanvas) {
+        previewCanvas.width = 0;
+        previewCanvas.height = 0;
+        previewCanvas = null;
+      }
+      modalCanvasWrap.innerHTML = '';
+      modalInfo.textContent = '';
+    }
+
+    async function renderPreview(idx) {
+      const entry = pages[idx];
+      if (!entry) return;
+
+      const sf = sourceFiles[entry.sourceIdx];
+      modalCanvasWrap.innerHTML = `<span class="modal-loading">${t('previewLoading')}</span>`;
+      modalInfo.textContent = t('previewInfo', entry.pageNum + 1, sf.file.name);
+
+      const pdfDoc = await pdfjsLib.getDocument({ data: sf.buffer.slice(0) }).promise;
+      const page = await pdfDoc.getPage(entry.pageNum + 1);
+      const unscaled = page.getViewport({ scale: 1 });
+      const scale = PREVIEW_WIDTH / unscaled.width;
+      const viewport = page.getViewport({ scale });
+
+      if (previewCanvas) {
+        previewCanvas.width = 0;
+        previewCanvas.height = 0;
+      }
+      previewCanvas = document.createElement('canvas');
+      previewCanvas.width = viewport.width;
+      previewCanvas.height = viewport.height;
+      const ctx = previewCanvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      if (previewIndex !== idx) return;
+
+      modalCanvasWrap.innerHTML = '';
+      modalCanvasWrap.appendChild(previewCanvas);
+    }
+
+    function updateNavButtons() {
+      modalPrev.disabled = previewIndex <= 0;
+      modalNext.disabled = previewIndex >= pages.length - 1;
+    }
+
+    document.getElementById('modal-close').addEventListener('click', closePreview);
+
+    previewModal.addEventListener('click', e => {
+      if (e.target === previewModal) closePreview();
+    });
+
+    document.addEventListener('keydown', e => {
+      if (!previewModal.classList.contains('open')) return;
+      if (e.key === 'Escape') closePreview();
+      if (e.key === 'ArrowLeft' && previewIndex > 0) {
+        previewIndex--;
+        updateNavButtons();
+        renderPreview(previewIndex);
+      }
+      if (e.key === 'ArrowRight' && previewIndex < pages.length - 1) {
+        previewIndex++;
+        updateNavButtons();
+        renderPreview(previewIndex);
+      }
+    });
+
+    modalPrev.addEventListener('click', () => {
+      if (previewIndex > 0) {
+        previewIndex--;
+        updateNavButtons();
+        renderPreview(previewIndex);
+      }
+    });
+
+    modalNext.addEventListener('click', () => {
+      if (previewIndex < pages.length - 1) {
+        previewIndex++;
+        updateNavButtons();
+        renderPreview(previewIndex);
+      }
+    });
 
     setLang(lang);
   </script>
