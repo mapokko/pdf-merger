@@ -547,14 +547,38 @@
     }
 
     .status {
-      margin-top: 1rem;
+      margin-top: 0.75rem;
       text-align: center;
-      font-size: 0.9rem;
-      min-height: 1.5rem;
+      font-size: 0.85rem;
+      min-height: 0;
+      padding: 0;
+      border-radius: var(--radius);
+      transition: padding 0.15s, background 0.15s;
     }
 
-    .status.error { color: var(--danger); }
-    .status.success { color: var(--success); }
+    .status:not(:empty) {
+      padding: 0.6rem 1rem;
+    }
+
+    .status.error {
+      color: var(--danger);
+      background: rgba(224, 49, 49, 0.1);
+      font-weight: 600;
+    }
+
+    [data-theme="dark"] .status.error {
+      background: rgba(255, 107, 107, 0.12);
+    }
+
+    .status.success {
+      color: var(--success);
+      background: rgba(47, 158, 68, 0.1);
+      font-weight: 600;
+    }
+
+    [data-theme="dark"] .status.success {
+      background: rgba(81, 207, 102, 0.12);
+    }
 
     .progress-bar {
       margin-top: 0.75rem;
@@ -602,6 +626,11 @@
     </div>
     <input type="file" id="file-input" accept=".pdf,application/pdf" multiple>
 
+    <div class="status" id="status"></div>
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+
     <div class="source-files" id="source-files"></div>
 
     <div class="page-grid-header" id="page-grid-header" style="display:none">
@@ -618,12 +647,6 @@
       <button class="btn btn-secondary" id="clear-btn"></button>
       <button class="btn btn-primary" id="merge-btn" disabled></button>
     </div>
-
-    <div class="progress-bar" id="progress-bar">
-      <div class="progress-fill" id="progress-fill"></div>
-    </div>
-
-    <div class="status" id="status"></div>
 
     <div class="footer">
       <div class="footer-author">by Fabio M</div>
