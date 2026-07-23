@@ -8,6 +8,21 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --surface-hover: #edeef1;
+      --border: #d5d7de;
+      --text: #1a1d27;
+      --text-muted: #6b7085;
+      --accent: #4d6ef5;
+      --accent-hover: #3b5de3;
+      --danger: #e03131;
+      --success: #2f9e44;
+      --radius: 10px;
+      --thumb-overlay: rgba(0, 0, 0, 0.55);
+    }
+
+    [data-theme="dark"] {
       --bg: #0f1117;
       --surface: #1a1d27;
       --surface-hover: #222632;
@@ -18,7 +33,7 @@
       --accent-hover: #8da4ff;
       --danger: #ff6b6b;
       --success: #51cf66;
-      --radius: 10px;
+      --thumb-overlay: rgba(0, 0, 0, 0.65);
     }
 
     body {
@@ -68,6 +83,20 @@
       background: var(--accent);
       color: #fff;
     }
+
+    .theme-toggle {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      padding: 0.25rem 0.5rem;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+      line-height: 1;
+    }
+
+    .theme-toggle:hover { color: var(--text); background: var(--surface-hover); }
 
     .subtitle {
       color: var(--text-muted);
@@ -263,7 +292,7 @@
       right: 4px;
       width: 22px;
       height: 22px;
-      background: rgba(0, 0, 0, 0.7);
+      background: var(--thumb-overlay);
       border: none;
       border-radius: 50%;
       color: #fff;
@@ -286,7 +315,7 @@
       left: 4px;
       min-width: 20px;
       height: 20px;
-      background: rgba(0, 0, 0, 0.65);
+      background: var(--thumb-overlay);
       border-radius: 10px;
       color: #fff;
       font-size: 0.65rem;
@@ -382,6 +411,7 @@
       <button class="lang-btn" data-lang="en">EN</button>
       <button class="lang-btn" data-lang="it">IT</button>
     </div>
+    <button class="theme-toggle" id="theme-toggle"></button>
   </div>
   <p class="subtitle" id="subtitle"></p>
 
@@ -404,19 +434,32 @@
       <button class="btn btn-secondary" id="clear-btn"></button>
       <button class="btn btn-primary" id="merge-btn" disabled></button>
     </div>
-    <p class="byline" id="byline" style="display:none">by Fabio M</p>
 
     <div class="progress-bar" id="progress-bar">
       <div class="progress-fill" id="progress-fill"></div>
     </div>
 
     <div class="status" id="status"></div>
+    <p class="byline">by Fabio M</p>
   </div>
 
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const themeToggle = document.getElementById('theme-toggle');
+    let theme = localStorage.getItem('pdf-merger-theme') || 'light';
+
+    function applyTheme(t) {
+      theme = t;
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('pdf-merger-theme', theme);
+      themeToggle.textContent = theme === 'dark' ? '☀' : '☾';
+    }
+
+    themeToggle.addEventListener('click', () => applyTheme(theme === 'dark' ? 'light' : 'dark'));
+    applyTheme(theme);
 
     const MAX_FILES = 10;
     const MAX_SIZE_BYTES = 25 * 1024 * 1024;
@@ -425,7 +468,7 @@
     const i18n = {
       en: {
         title: 'PDF Merger',
-        subtitle: 'Merge multiple PDFs in your browser. Nothing is uploaded.',
+        subtitle: 'Merge multiple PDFs in your browser. Everything stays on your PC, nothing is sent to third-party entities.',
         dropText: '<strong>Click to select</strong> or drag & drop PDFs here',
         dropTextCompact: '<strong>Add more PDFs</strong>',
         limits: 'Max 10 files, 25 MB each',
@@ -453,7 +496,7 @@
       },
       it: {
         title: 'Unisci PDF',
-        subtitle: 'Unisci più PDF nel tuo browser. Nessun file viene caricato.',
+        subtitle: 'Unisci più PDF nel tuo browser. Tutto resta sul tuo PC, nulla viene inviato a terze parti.',
         dropText: '<strong>Clicca per selezionare</strong> o trascina i PDF qui',
         dropTextCompact: '<strong>Aggiungi altri PDF</strong>',
         limits: 'Max 10 file, 25 MB ciascuno',
@@ -525,7 +568,7 @@
     const progressBar = document.getElementById('progress-bar');
     const progressFill = document.getElementById('progress-fill');
     const actionsEl = document.getElementById('actions');
-    const bylineEl = document.getElementById('byline');
+
 
     let sourceFiles = [];
     let pages = [];
@@ -622,7 +665,6 @@
       const hasPages = pages.length > 0;
       dropZone.classList.toggle('compact', hasPages);
       actionsEl.style.display = hasPages ? 'flex' : 'none';
-      bylineEl.style.display = hasPages ? 'block' : 'none';
       document.getElementById('page-grid-header').style.display = hasPages ? 'flex' : 'none';
       mergeBtn.disabled = pages.length < 1;
 
