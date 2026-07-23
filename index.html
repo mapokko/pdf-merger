@@ -360,11 +360,32 @@
 
     .btn-secondary:hover:not(:disabled) { background: var(--surface-hover); }
 
-    .byline {
+    .footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
       text-align: center;
       color: var(--text-muted);
+      font-size: 0.7rem;
+      line-height: 1.6;
+    }
+
+    .footer-author {
       font-size: 0.75rem;
-      margin-top: 0.5rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .footer a:hover { text-decoration: underline; }
+
+    .footer-legal {
+      max-width: 500px;
+      margin: 0.5rem auto 0;
     }
 
     .status {
@@ -440,7 +461,11 @@
     </div>
 
     <div class="status" id="status"></div>
-    <p class="byline">by Fabio M</p>
+
+    <div class="footer">
+      <div class="footer-author">by Fabio M</div>
+      <div id="footer-text"></div>
+    </div>
   </div>
 
   <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
@@ -493,6 +518,13 @@
         mergeSuccess: (pages, size) => `Merged ${pages} ${pages !== 1 ? 'pages' : 'page'} (${size}).`,
         pagesFromFiles: (p, f) => `${p} ${p !== 1 ? 'pages' : 'page'} from ${f} ${f !== 1 ? 'files' : 'file'}`,
         dragToReorder: 'Drag to reorder',
+        footerHtml: 'This is an open-source project. The source code is available for review <a href="https://github.com/mapokko/pdf-merger" target="_blank" rel="noopener">here</a>.'
+          + '<div class="footer-legal">'
+          + 'This software is provided as-is, with no service level agreement and no guarantee of functionality. '
+          + 'The author assumes no liability for data loss, file corruption, or any issues arising from the use of this tool. '
+          + 'Merged documents may not retain interactive forms, annotations, or digital signatures. '
+          + 'All processing occurs locally in your browser; no data is collected, stored, or transmitted to any third party.'
+          + '</div>',
       },
       it: {
         title: 'Unisci PDF',
@@ -521,6 +553,13 @@
         mergeSuccess: (pages, size) => `${pages !== 1 ? 'Unite' : 'Unita'} ${pages} ${pages !== 1 ? 'pagine' : 'pagina'} (${size}).`,
         pagesFromFiles: (p, f) => `${p} ${p !== 1 ? 'pagine' : 'pagina'} da ${f} file`,
         dragToReorder: 'Trascina per riordinare',
+        footerHtml: 'Questo è un progetto open source. Il codice sorgente è disponibile per la consultazione <a href="https://github.com/mapokko/pdf-merger" target="_blank" rel="noopener">qui</a>.'
+          + '<div class="footer-legal">'
+          + 'Questo software è fornito così com\'è, senza alcun accordo sul livello di servizio né garanzia di funzionamento. '
+          + 'L\'autore non si assume alcuna responsabilità per perdita di dati, corruzione di file o qualsiasi problema derivante dall\'utilizzo di questo strumento. '
+          + 'I documenti uniti potrebbero non conservare moduli interattivi, annotazioni o firme digitali. '
+          + 'Tutta l\'elaborazione avviene localmente nel browser; nessun dato viene raccolto, archiviato o trasmesso a terze parti.'
+          + '</div>',
       },
     };
 
@@ -549,6 +588,7 @@
       document.getElementById('drop-limits').textContent = t('limits');
       document.getElementById('clear-btn').textContent = t('clearAll');
       document.getElementById('merge-btn').textContent = t('mergePdfs');
+      document.getElementById('footer-text').innerHTML = t('footerHtml');
       document.querySelectorAll('.lang-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === lang);
       });
